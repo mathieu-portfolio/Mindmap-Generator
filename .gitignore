@@ -1,6 +1,6 @@
 .gitignore
 *test*
-docs/
+docs/doxygen/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
