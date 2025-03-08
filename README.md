@@ -36,8 +36,8 @@ Then open **`http://localhost:5000/`** in your browser (Google Chrome is recomme
 ![App Preview](docs/resources/app.png)
 
 ### **Generating a Mind Map**
-1. Enter a **Wikipedia URL** and **max depth**, which is the maximum number of children the main node can have.
-2. Click **"Generate Mindmap"**.
+1. Enter a **Wikipedia URL** and **max depth**, which is the maximum number of children the main node can have. The current project only covers english and french articles.
+3. Click **"Generate Mindmap"**.
 
 ### **Editing a Mind Map**
 - **Right-click a node** for options (resize, delete, bold, etc.).
