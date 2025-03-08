@@ -1,0 +1,19 @@
+/**
+ * @mainpage Mindmap Generator Documentation
+ *
+ * ## Overview
+ * The **Mindmap Generator** is a web-based tool that automatically extracts
+ * Wikipedia article structures and converts them into interactive mind maps.
+ *
+ * ## Features
+ * - Extracts Wikipedia headers dynamically
+ * - Supports graph and tree-based mind maps
+ * - Interactive visualization with GoJS
+ * - REST API for generating, saving, and loading mind maps
+ *
+ * ## Getting Started
+ * - **Python Backend**: See `flask_app.py` for API documentation.
+ * - **Web Scraping Logic**: See `mindmap_generator.py` for Wikipedia data extraction.
+ * - **JavaScript Frontend**: Check `static/js/` for the visualization logic.
+ * - **How to Use**: Run `python flask_app.py` and visit `localhost:5000`.
+ */

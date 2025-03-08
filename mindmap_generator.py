@@ -1,3 +1,12 @@
+##
+# @file mindmap_generator.py
+# @brief Mind Map Generator for Wikipedia Pages.
+# 
+# @details
+# This module retrieves Wikipedia articles, extracts hierarchical headers,
+# and converts them into a structured mind map format. The result is 
+# returned as a JSON-like structure that can be visualized with GoJS.
+
 import requests
 from bs4 import BeautifulSoup
 import networkx as nx
@@ -24,6 +33,13 @@ remove_title = {
   'fr': ' - Wikipédia'
 }
 
+##
+# @brief Extracts the title of a Wikipedia page.
+# 
+# @param {BeautifulSoup} soup: The parsed HTML content of the Wikipedia page.
+# @param {str} language: The language code (e.g., 'en', 'fr').
+# 
+# @return {str}: The page title with Wikipedia suffix removed.
 def get_page_title(soup, language):
   title_element = soup.find("title")
   if title_element is not None:
@@ -32,6 +48,12 @@ def get_page_title(soup, language):
   else:
     return None
 
+##
+# @brief Determines the language and platform (mobile or desktop) from a Wikipedia URL.
+# 
+# @param {url} url: The Wikipedia URL.
+# 
+# @return {tuple}: (language_code (str), is_mobile (bool))
 def extract_language_and_platform(url):
   if "wikipedia.org" in url:
     # Extracting the language code from the URL
@@ -47,6 +69,12 @@ def extract_language_and_platform(url):
     return language_code, is_mobile
   return None, None
 
+##
+# @brief Returns a selector function or CSS selector for extracting relevant Wikipedia elements.
+# 
+# @param {str} language: The language code.
+# 
+# @return {function|str}: The selector to identify relevant elements in the article.
 def get_selector(language):
   base_selectors = {
     'en': lambda tag: tag.name == 'div' and tag.get('role') == 'note',
@@ -72,6 +100,13 @@ def get_selector(language):
   else:
     return lambda tag: False
 
+##
+# @brief Adds a node to the graph with a unique identifier.
+# 
+# @param {networkx.DiGraph} G: The graph object.
+# @param {str} name: The name of the node.
+# 
+# @return {int}: The assigned node ID.
 def add_node(G, name):
   global node_counter
 
@@ -81,6 +116,14 @@ def add_node(G, name):
 
   return id
 
+##
+# @brief Adds an edge between a parent node and a new child node.
+#
+# @param {networkx.DiGraph} G: The graph object.
+# @param {int} parent_id : The ID of the parent node.
+# @param {str} child_name : The name of the child node.
+#
+# @return {int}: The assigned child node ID.
 def add_edge(G, parent_id, child_name):
   child_id = add_node(G, child_name)
   G.add_edge(parent_id, child_id)
@@ -88,6 +131,14 @@ def add_edge(G, parent_id, child_name):
 
   return child_id
 
+##
+# @brief Adds an edge between a parent node and a new child node if it doesn't already exist.
+#
+# @param {networkx.DiGraph} G: The graph object.
+# @param {int} parent_id : The ID of the parent node.
+# @param {str} child_name : The name of the child node.
+#
+# @return {int|None}: The assigned child node ID if added, None otherwise.
 def try_add_edge(G, parent_id, child_name):
   for child_id in list(G.successors(parent_id)):
     if G.nodes[child_id]['name'] == child_name:
@@ -95,6 +146,17 @@ def try_add_edge(G, parent_id, child_name):
 
   return add_edge(G, parent_id, child_name)
 
+##
+# @brief Adds a header as a node to the graph, filtering out excluded headers.
+#
+# @param {networkx.DiGraph} G: The graph object.
+# @param {Tag} h: The BeautifulSoup tag representing the header.
+# @param {int} parent: Parent node ID.
+# @param {function} add_edge_fun: Function to add an edge (add_edge or try_add_edge).
+# @param {list} remove_part: Patterns to remove from the header title.
+# @param {str} language: Language code (e.g., 'en', 'fr').
+#
+# @return {int|None}: The node ID if added, None otherwise.
 def add_header(G, h, parent, add_edge_fun, remove_part, language):
   h_title = h.text
   h_title = re.sub(remove_part, '', h_title)
@@ -105,6 +167,21 @@ def add_header(G, h, parent, add_edge_fun, remove_part, language):
 
   return node_id
 
+##
+# @brief Recursively generates the mind map hierarchy from Wikipedia headers.
+#
+# @param {networkx.DiGraph} G: The graph object.
+# @param {list} headers: List of BeautifulSoup header tags.
+# @param {list} main_article_elements: List of article elements linking to sub-pages.
+# @param {int} root_id: Root node ID.
+# @param {str} parent_name: The name of the parent node.
+# @param {int} page_level: Current depth level.
+# @param {int} max_depth: Maximum depth of recursion.
+# @param {set} visited: Set of visited URLs to prevent infinite loops.
+# @param {list} remove_part: Patterns to remove from header text.
+# @param {str} language: Wikipedia language code.
+#
+# @return {networkx.DiGraph}: The updated graph.
 def generate_hierarchy(G, headers, main_article_elements, root_id, parent_name, page_level, max_depth, \
                        visited, remove_part, language):
   parent_id = None
@@ -141,6 +218,17 @@ def generate_hierarchy(G, headers, main_article_elements, root_id, parent_name, 
 
   return G
 
+##
+# @brief Extracts the hierarchical structure of a Wikipedia page.
+#
+# @param {str} url: Wikipedia article URL.
+# @param {networkx.DiGraph} G: The graph object.
+# @param {int} root_id: Root node ID.
+# @param {int} max_depth: Current depth level. Defaults to 0.
+# @param {int} max_depth: Maximum recursion depth. Defaults to 4.
+# @param {set} visited: Set of visited URLs to prevent loops.
+#
+# @return {None}: Updates the graph directly.
 def get_page_hierarchy(url, G, root_id, page_level=0, max_depth=4, visited=None):
   if visited is None:
     visited = set()
@@ -182,6 +270,13 @@ def get_page_hierarchy(url, G, root_id, page_level=0, max_depth=4, visited=None)
     generate_hierarchy(G, headers, main_article_elements, root_id, suffix, page_level, max_depth, \
                        visited, remove_part, language)
 
+##
+# @brief Generates a directed graph representing the Wikipedia page hierarchy.
+#
+# @param {str} url: Wikipedia article URL.
+# @param {int} max_depth: Maximum depth for recursive hierarchy. Defaults to 5.
+#
+# @return {networkx.DiGraph}: The generated graph with node relationships.
 def generate_map(url, max_depth=5):
   global node_counter
   G = nx.DiGraph()
@@ -195,6 +290,14 @@ def generate_map(url, max_depth=5):
 
   return G
 
+##
+# @brief Arranges nodes in a hierarchical structure for visualization.
+#
+# @param {networkx.DiGraph} G: The graph object.
+# @param {list} nodes_ids: List of node IDs to process.
+# @param {int} depth: Current depth level.
+# @param {int} max_depth: Maximum allowed depth.
+# @param {float} scale: Scale factor for visualization.
 def arrange_nodes(G, nodes_ids, depth, max_depth, scale):
   if len(nodes_ids) <= 0:
     return
@@ -207,6 +310,10 @@ def arrange_nodes(G, nodes_ids, depth, max_depth, scale):
     node['dir'] = dir
     arrange_nodes(G, list(G.successors(node_id)), depth + 1, max_depth, scale)
 
+##
+# @brief Assigns colors to nodes based on depth to improve visualization.
+# 
+# @param {networkx.DiGraph} G: The graph object.
 def set_node_colors(G):
   distances = nx.single_source_shortest_path_length(G, 0)
   children_ids = list(G.successors(0))
@@ -232,6 +339,13 @@ def set_node_colors(G):
 
     G.nodes[node_id]['color'] = color
 
+##
+# @brief Converts a Wikipedia page into a mind map JSON structure.
+# 
+# @param {str} url: The Wikipedia article URL.
+# @param {int} max_depth: Maximum depth for extracting sections.
+# 
+# @return {dict}: The mind map data structured for visualization.
 def convert_url_to_mindmap(url, max_depth):
   G = generate_map(url, max_depth)
 
